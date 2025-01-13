@@ -23,7 +23,6 @@ internal class MatchStarter(
     private int _connectionReadies;
 
     private bool _communicationStarted;
-    private bool _hasEverLoadedMap;
     private bool _needsSpawnCars;
 
     public bool HasSpawnedMap;
@@ -50,8 +49,8 @@ internal class MatchStarter(
         {
             _communicationStarted = false;
             LaunchManager.LaunchRocketLeague(
-                //matchSettings.Launcher,
-                //matchSettings.GamePath,
+                matchSettings.Launcher,
+                matchSettings.GamePath,
                 gamePort
             );
         }
@@ -71,7 +70,6 @@ internal class MatchStarter(
     public void MapSpawned(string MapName)
     {
         Logger.LogInformation("Got map info for " + MapName);
-        _hasEverLoadedMap = true;
         HasSpawnedMap = true;
 
         if (!_needsSpawnCars)
@@ -102,7 +100,7 @@ internal class MatchStarter(
             if (playerNames.TryGetValue(playerName, out int value))
             {
                 playerNames[playerName] = ++value;
-                playerConfig.Name = playerName + $" ({value})";
+                playerConfig.Name = playerName + $" ({value + 1})";
             }
             else
             {
@@ -140,7 +138,7 @@ internal class MatchStarter(
             if (scriptConfig.SpawnId == 0)
                 scriptConfig.SpawnId = scriptConfig.Name.GetHashCode();
 
-            scriptConfig.Location ??= "";
+            scriptConfig.RootDir ??= "";
             scriptConfig.RunCommand ??= "";
             scriptConfig.AgentId ??= "";
         }
@@ -155,7 +153,7 @@ internal class MatchStarter(
 
         foreach (var playerConfig in matchSettings.PlayerConfigurations)
         {
-            if (playerConfig.Variety.Type != PlayerClass.RLBot)
+            if (playerConfig.Variety.Type != PlayerClass.CustomBot)
                 continue;
 
             if (playerConfig.Hivemind)
@@ -208,16 +206,15 @@ internal class MatchStarter(
 
         var shouldSpawnNewMap = matchSettings.ExistingMatchBehavior switch
         {
-            ExistingMatchBehavior.Continue_And_Spawn => !_hasEverLoadedMap,
+            ExistingMatchBehavior.Continue_And_Spawn => false,
             ExistingMatchBehavior.Restart_If_Different
                 => MatchEnded || IsDifferentFromLast(matchSettings),
-            _ => true
+            _ => true,
         };
 
         _needsSpawnCars = true;
         if (shouldSpawnNewMap)
         {
-            _hasEverLoadedMap = true;
             HasSpawnedMap = false;
             _matchSettings = null;
             _deferredMatchSettings = matchSettings;
@@ -340,7 +337,7 @@ internal class MatchStarter(
 
             switch (playerConfig.Variety.Type)
             {
-                case PlayerClass.RLBot:
+                case PlayerClass.CustomBot:
                     Logger.LogInformation(
                         "Spawning player "
                             + playerConfig.Name
@@ -364,7 +361,7 @@ internal class MatchStarter(
                         PsyonixSkill.Beginner => BotSkill.Intro,
                         PsyonixSkill.Rookie => BotSkill.Easy,
                         PsyonixSkill.Pro => BotSkill.Medium,
-                        _ => BotSkill.Hard
+                        _ => BotSkill.Hard,
                     };
 
                     bridge.TryWrite(

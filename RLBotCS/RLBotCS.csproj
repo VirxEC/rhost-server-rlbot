@@ -12,16 +12,20 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <BuiltInComInteropSupport>true</BuiltInComInteropSupport>
     <PublishWmiLightStaticallyLinked>true</PublishWmiLightStaticallyLinked>
+    <SelfContained>true</SelfContained>
+    <StaticExecutable>true</StaticExecutable>
+    <LinkerFlavor Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))'">lld</LinkerFlavor>
+    <InvariantGlobalization>true</InvariantGlobalization>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Tomlyn" Version="0.17.0" />
-    <PackageReference Include="WmiLight" Version="6.1.1" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.0" />
+    <PackageReference Include="Tomlyn" Version="0.18.0" />
+    <PackageReference Include="WmiLight" Version="6.10.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.FlatBuffers" Version="24.3.25" />
+    <PackageReference Include="Google.FlatBuffers" Version="24.12.23" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="FlatBuffer\" />
@@ -41,12 +45,14 @@
     <NativeLibrary Include="./lib/rl_ball_sym/librl_ball_sym.a" Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))'" />
 
     <!-- Dynamically linked for development -->
-    <ContentWithTargetPath Include=".\lib\rl_ball_sym\rl_ball_sym.dll" Condition="'$(OS)' == 'Windows_NT'">
+    <ContentWithTargetPath Include=".\lib\rl_ball_sym\rl_ball_sym.dll" Condition="'$(OS)' == 'Windows_NT' and '$(Configuration)' == 'Debug'">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>rl_ball_sym.dll</TargetPath>
     </ContentWithTargetPath>
 
     <ContentWithTargetPath Include="./lib/rl_ball_sym/librl_ball_sym.so" Condition="'$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))'">
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>rl_ball_sym.so</TargetPath>
     </ContentWithTargetPath>

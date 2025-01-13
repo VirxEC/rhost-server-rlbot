@@ -1,4 +1,4 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using rlbot.flat;
 using RLBotCS.Conversion;
@@ -91,24 +91,6 @@ public static class ConfigParser
         }
     }
 
-    private static int ParseInt(
-        TomlTable table,
-        string key,
-        int fallback,
-        List<string> missingValues
-    )
-    {
-        try
-        {
-            return (int)(long)table[key];
-        }
-        catch (KeyNotFoundException)
-        {
-            missingValues.Add(key);
-            return fallback;
-        }
-    }
-
     private static uint ParseUint(
         TomlTable table,
         string key,
@@ -119,24 +101,6 @@ public static class ConfigParser
         try
         {
             return (uint)(long)table[key];
-        }
-        catch (KeyNotFoundException)
-        {
-            missingValues.Add(key);
-            return fallback;
-        }
-    }
-
-    private static float ParseFloat(
-        TomlTable table,
-        string key,
-        float fallback,
-        List<string> missingValues
-    )
-    {
-        try
-        {
-            return Convert.ToSingle(table[key]);
         }
         catch (KeyNotFoundException)
         {
@@ -236,12 +200,12 @@ public static class ConfigParser
             new()
             {
                 Name = name,
-                Location = CombinePaths(
+                RootDir = CombinePaths(
                     tomlParent,
-                    ParseString(scriptSettings, "location", missingValues) ?? ""
+                    ParseString(scriptSettings, "root_dir", missingValues) ?? ""
                 ),
                 RunCommand = GetRunCommand(scriptSettings, missingValues),
-                AgentId = agentId
+                AgentId = agentId,
             };
         return scriptConfig;
     }
@@ -251,12 +215,12 @@ public static class ConfigParser
         string matchConfigPath,
         List<string> missingValues
     ) =>
-        ParseEnum(table, "type", PlayerClass.RLBot, missingValues) switch
+        ParseEnum(table, "type", PlayerClass.CustomBot, missingValues) switch
         {
-            PlayerClass.RLBot
+            PlayerClass.CustomBot
                 => GetBotConfig(
                     table,
-                    PlayerClassUnion.FromRLBot(new RLBotT()),
+                    PlayerClassUnion.FromCustomBot(new CustomBotT()),
                     matchConfigPath,
                     missingValues
                 ),
@@ -277,7 +241,7 @@ public static class ConfigParser
                                 "skill",
                                 PsyonixSkill.AllStar,
                                 missingValues
-                            )
+                            ),
                         }
                     ),
                     matchConfigPath,
@@ -285,7 +249,7 @@ public static class ConfigParser
                 ),
             PlayerClass.PartyMember
                 => throw new NotImplementedException("PartyMember not implemented"),
-            _ => throw new NotImplementedException("Unimplemented PlayerClass type")
+            _ => throw new NotImplementedException("Unimplemented PlayerClass type"),
         };
 
     private static PlayerConfigurationT GetHumanConfig(
@@ -300,7 +264,7 @@ public static class ConfigParser
             Name = "Human",
             RootDir = "",
             RunCommand = "",
-            AgentId = ""
+            AgentId = "",
         };
 
     private static PlayerConfigurationT GetPsyonixConfig(
@@ -365,7 +329,7 @@ public static class ConfigParser
             RootDir = rootDir,
             RunCommand = runCommand,
             Loadout = loadout,
-            AgentId = agentId
+            AgentId = agentId,
         };
     }
 
@@ -488,7 +452,7 @@ public static class ConfigParser
                 missingValues
             ),
             Hivemind = ParseBool(playerSettings, "hivemind", false, missingValues),
-            AgentId = agentId
+            AgentId = agentId,
         };
     }
 
@@ -691,7 +655,7 @@ public static class ConfigParser
             Freeplay = ParseBool(matchTable, "freeplay", false, missingValues["match"]),
             MutatorSettings = GetMutatorSettings(mutatorTable, missingValues["mutators"]),
             PlayerConfigurations = playerConfigs,
-            ScriptConfigurations = scriptConfigs
+            ScriptConfigurations = scriptConfigs,
         };
 
         if (missingValues.Count > 0)

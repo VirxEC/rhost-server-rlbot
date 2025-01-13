@@ -11,7 +11,6 @@ namespace RLBotCS.ManagerTools;
 
 internal static class LaunchManager
 {
-    private const string RocketLeagueExePath = @"C:\Program Files (x86)\Steam\steamapps\common\rocketleague\Binaries\Win64\RocketLeague.exe.unpacked.exe";
     private const string SteamGameId = "252950";
     public const int RlbotSocketsPort = 23234;
     private const int DefaultGamePort = 50000;
@@ -89,7 +88,7 @@ internal static class LaunchManager
             "-rlbot",
             $"RLBot_ControllerURL=127.0.0.1:{gamePort}",
             "RLBot_PacketSendRate=240",
-            "-nomovie"
+            "-nomovie",
         ];
 
     private static List<string> ParseCommand(string command)
@@ -178,8 +177,8 @@ internal static class LaunchManager
 
             Process scriptProcess = RunCommandInShell(script.RunCommand);
 
-            if (script.Location != "")
-                scriptProcess.StartInfo.WorkingDirectory = script.Location;
+            if (script.RootDir != "")
+                scriptProcess.StartInfo.WorkingDirectory = script.RootDir;
 
             scriptProcess.StartInfo.EnvironmentVariables["RLBOT_AGENT_ID"] = script.AgentId;
             scriptProcess.StartInfo.EnvironmentVariables["RLBOT_SERVER_PORT"] =
@@ -196,29 +195,137 @@ internal static class LaunchManager
         }
     }
 
-    public static void LaunchRocketLeague(int gamePort)
+    public static void LaunchRocketLeague(
+        rlbot.flat.Launcher launcherPref,
+        string gamePath,
+        int gamePort
+    )
     {
-        if (!File.Exists(RocketLeagueExePath))
-            throw new FileNotFoundException($"Rocket League executable not found at {RocketLeagueExePath}");
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            switch (launcherPref)
+            {
+                case rlbot.flat.Launcher.Steam:
+                    string steamPath = GetWindowsSteamPath();
+                    Process rocketLeague = new();
+                    rocketLeague.StartInfo.FileName = steamPath;
+                    rocketLeague.StartInfo.Arguments =
+                        $"-applaunch {SteamGameId} "
+                        + string.Join(" ", GetIdealArgs(gamePort));
 
-        Process rocketLeague = new();
-        rocketLeague.StartInfo.FileName = RocketLeagueExePath;
-        rocketLeague.StartInfo.Arguments = string.Join(" ", GetIdealArgs(gamePort));
-        rocketLeague.StartInfo.UseShellExecute = false;
+                    Logger.LogInformation(
+                        $"Starting Rocket League with args {steamPath} {rocketLeague.StartInfo.Arguments}"
+                    );
+                    rocketLeague.Start();
+                    break;
+                case rlbot.flat.Launcher.Epic:
+                    bool nonRLBotGameRunning = IsRocketLeagueRunning();
 
-        Logger.LogInformation(
-            $"Starting Rocket League with args: {rocketLeague.StartInfo.Arguments}"
-        );
+                    // we don't need to start the game because there's another instance of non-rlbot rocket league open
+                    if (!nonRLBotGameRunning)
+                    {
+                        // we need a hack to launch the game properly
+                        // start the game
+                        Process launcher = new();
+                        launcher.StartInfo.FileName = "cmd.exe";
+                        launcher.StartInfo.Arguments =
+                            "/c start \"\" \"com.epicgames.launcher://apps/9773aa1aa54f4f7b80e44bef04986cea%3A530145df28a24424923f5828cc9031a1%3ASugar?action=launch&silent=true\"";
+                        launcher.Start();
 
-        try
-        {
-            rocketLeague.Start();
-        }
-        catch (Exception e)
-        {
-            Logger.LogError($"Failed to launch Rocket League: {e.Message}");
-            throw;
-        }
+                        // wait for it to start
+                        Thread.Sleep(1000);
+                    }
+
+                    Console.WriteLine("Waiting for Rocket League path details...");
+                    string? args = null;
+
+                    // get the game path & login args, the quickly kill the game
+                    // todo: add max number of retries
+                    while (args is null)
+                    {
+                        // don't kill the game if it was already running, and not for RLBot
+                        args = GetGameArgs(!nonRLBotGameRunning);
+                        Thread.Sleep(1000);
+                    }
+
+                    if (args is null)
+                        throw new Exception("Failed to get Rocket League args");
+
+                    string directGamePath = ParseCommand(args)[0];
+                    Logger.LogInformation($"Found Rocket League @ \"{directGamePath}\"");
+
+                    // append RLBot args
+                    args = args.Replace(directGamePath, "");
+                    args = args.Replace("\"\"", "");
+                    string idealArgs = string.Join(" ", GetIdealArgs(gamePort));
+                    // rlbot args need to be first or the game might ignore them :(
+                    string modifiedArgs = $"\"{directGamePath}\" {idealArgs} {args}";
+
+                    // wait for the game to fully close
+                    while (IsRocketLeagueRunning())
+                        Thread.Sleep(500);
+
+                    // relaunch the game with the new args
+                    Process epicRocketLeague = new();
+                    epicRocketLeague.StartInfo.FileName = "cmd.exe";
+                    epicRocketLeague.StartInfo.Arguments = $"/c \"{modifiedArgs}\"";
+
+                    // prevent the game from printing to the console
+                    epicRocketLeague.StartInfo.UseShellExecute = false;
+                    epicRocketLeague.StartInfo.RedirectStandardOutput = true;
+                    epicRocketLeague.StartInfo.RedirectStandardError = true;
+                    epicRocketLeague.Start();
+
+                    Logger.LogInformation(
+                        $"Starting RocketLeague.exe directly with {idealArgs}"
+                    );
+
+                    // if we don't read the output, the game will hang
+                    new Thread(() =>
+                    {
+                        epicRocketLeague.StandardOutput.ReadToEnd();
+                    }).Start();
+
+                    break;
+                case rlbot.flat.Launcher.Custom:
+                    if (gamePath.ToLower() == "legendary")
+                    {
+                        LaunchGameViaLegendary();
+                        return;
+                    }
+
+                    throw new NotSupportedException("Unexpected launcher. Use Steam.");
+            }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            switch (launcherPref)
+            {
+                case rlbot.flat.Launcher.Steam:
+                    string args = string.Join("%20", GetIdealArgs(gamePort));
+                    Process rocketLeague = new();
+                    rocketLeague.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                    rocketLeague.StartInfo.FileName = "steam";
+                    rocketLeague.StartInfo.Arguments =
+                        $"steam://rungameid/{SteamGameId}//{args}";
+
+                    Logger.LogInformation(
+                        $"Starting Rocket League via Steam CLI with {rocketLeague.StartInfo.Arguments}"
+                    );
+                    rocketLeague.Start();
+                    break;
+                case rlbot.flat.Launcher.Epic:
+                    throw new NotSupportedException("Epic Games not supported on Linux.");
+                case rlbot.flat.Launcher.Custom:
+                    if (gamePath.ToLower() == "legendary")
+                    {
+                        LaunchGameViaLegendary();
+                        return;
+                    }
+
+                    throw new NotSupportedException("Unexpected launcher. Use Steam.");
+            }
+        else
+            throw new PlatformNotSupportedException(
+                "RLBot is not supported on non-Windows/Linux platforms"
+            );
     }
 
     public static bool IsRocketLeagueRunning() =>

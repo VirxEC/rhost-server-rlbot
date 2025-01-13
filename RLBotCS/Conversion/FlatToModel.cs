@@ -71,17 +71,8 @@ internal static class FlatToModel
 
     internal static Loadout ToLoadout(rlbot.flat.PlayerLoadoutT l, uint team)
     {
-        Color primaryColor = l.PrimaryColorLookup switch
-        {
-            { } p => Color.FromArgb(p.A, p.R, p.G, p.B),
-            _ => ColorSwatches.GetPrimary(l.TeamColorId, team)
-        };
-
-        Color secondaryColor = l.SecondaryColorLookup switch
-        {
-            { } s => Color.FromArgb(s.A, s.R, s.G, s.B),
-            _ => ColorSwatches.GetSecondary(l.CustomColorId)
-        };
+        Color primaryColor = ColorSwatches.GetPrimary(l.TeamColorId, team);
+        Color secondaryColor = ColorSwatches.GetSecondary(l.CustomColorId);
 
         var lp = l.LoadoutPaint;
 
@@ -95,7 +86,7 @@ internal static class FlatToModel
                 AntennaPaintId = (byte)lp.AntennaPaintId,
                 HatPaintId = (byte)lp.HatPaintId,
                 TrailsPaintId = (byte)lp.TrailsPaintId,
-                GoalExplosionPaintId = (byte)lp.GoalExplosionPaintId
+                GoalExplosionPaintId = (byte)lp.GoalExplosionPaintId,
             };
 
         return new Loadout
@@ -113,7 +104,7 @@ internal static class FlatToModel
             WheelsId = (ushort)l.WheelsId,
             LoadoutPaint = loadoutPaint,
             PrimaryColorLookup = primaryColor,
-            SecondaryColorLookup = secondaryColor
+            SecondaryColorLookup = secondaryColor,
         };
     }
 
@@ -129,7 +120,7 @@ internal static class FlatToModel
                     partVec.Y?.Val ?? defaultVec.Y,
                     partVec.Z?.Val ?? defaultVec.Z
                 ),
-            _ => defaultVec
+            _ => defaultVec,
         };
 
     internal static Rotator DesiredToRotator(
@@ -144,7 +135,7 @@ internal static class FlatToModel
                     partRot.Yaw?.Val ?? defaultRot.Yaw,
                     partRot.Roll?.Val ?? defaultRot.Roll
                 ),
-            _ => defaultRot
+            _ => defaultRot,
         };
 
     internal static Physics DesiredToPhysics(rlbot.flat.DesiredPhysicsT p, Physics defaultP) =>

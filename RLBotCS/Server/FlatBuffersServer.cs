@@ -16,7 +16,7 @@ internal class FlatBuffersServer(
     private readonly ServerContext _context =
         new(incomingMessages, matchStarter, bridge)
         {
-            Server = new TcpListener(new(new byte[] { 0, 0, 0, 0 }), rlbotPort)
+            Server = new TcpListener(new(new byte[] { 0, 0, 0, 0 }), rlbotPort),
         };
 
     private void AddSession(TcpClient client)

@@ -18,16 +18,25 @@ try
     // Validate RLBot sockets port
     if (rlbotSocketsPort < 0 || rlbotSocketsPort > 65535)
     {
-        throw new ArgumentOutOfRangeException(nameof(rlbotSocketsPort), "Port number must be between 0 and 65535.");
+        throw new ArgumentOutOfRangeException(
+            nameof(rlbotSocketsPort),
+            "Port number must be between 0 and 65535."
+        );
     }
 
     // Parse game port
-    gamePort = args.Length > 1 ? int.Parse(args[1]) : throw new ArgumentException("Game port argument is required.");
+    gamePort =
+        args.Length > 1
+            ? int.Parse(args[1])
+            : throw new ArgumentException("Game port argument is required.");
 
     // Validate game port
     if (gamePort < 0 || gamePort > 65535)
     {
-        throw new ArgumentOutOfRangeException(nameof(gamePort), "Port number must be between 0 and 65535.");
+        throw new ArgumentOutOfRangeException(
+            nameof(gamePort),
+            "Port number must be between 0 and 65535."
+        );
     }
 }
 catch (FormatException)
@@ -46,8 +55,9 @@ catch (ArgumentException ex)
     return;
 }
 
-logger.LogInformation($"Server will start on RLBot socket port {rlbotSocketsPort} and game port {gamePort}.");
-
+logger.LogInformation(
+    $"Server will start on RLBot socket port {rlbotSocketsPort} and game port {gamePort}."
+);
 logger.LogInformation($"Waiting for Rocket League to connect on port {gamePort}");
 
 // Set up the handler to use bridge to talk with the game
@@ -94,15 +104,17 @@ Thread bridgeHandler =
 bridgeHandler.Start();
 
 // Block until everything properly shuts down
-void WaitForShutdown()
+void WaitForShutdown(bool log = true)
 {
     rlbotServer.Join();
-    logger.LogInformation("RLBot server has shut down successfully.");
+    if (log)
+        logger.LogInformation("TCP handler has shut down successfully.");
 
     bridgeWriter.TryComplete();
 
     bridgeHandler.Join();
-    logger.LogInformation("Bridge handler has shut down successfully.");
+    if (log)
+        logger.LogInformation("Bridge handler has shut down successfully.");
 }
 
 void Terminate()
@@ -120,4 +132,4 @@ AppDomain.CurrentDomain.ProcessExit += (_, _) => Terminate();
 Console.CancelKeyPress += (_, _) => Terminate();
 
 // Wait for a normal shutdown
-WaitForShutdown();
+WaitForShutdown(false);

@@ -47,7 +47,7 @@ internal class FlatBuffersSession
     private bool _connectionEstablished;
     private bool _wantsBallPredictions;
     private bool _wantsComms;
-    private bool _closeAfterMatch;
+    private bool _closeBetweenMatches;
     private bool _isReady;
     private bool _stateSettingIsEnabled;
     private bool _renderingIsEnabled;
@@ -99,7 +99,7 @@ internal class FlatBuffersSession
                 _agentId = readyMsg.AgentId;
                 _wantsBallPredictions = readyMsg.WantsBallPredictions;
                 _wantsComms = readyMsg.WantsComms;
-                _closeAfterMatch = readyMsg.CloseAfterMatch;
+                _closeBetweenMatches = readyMsg.CloseBetweenMatches;
 
                 await _rlbotServer.WriteAsync(
                     new IntroDataRequest(_incomingMessages.Writer, _agentId)
@@ -128,7 +128,7 @@ internal class FlatBuffersSession
                 // use the first spawn id we have
                 PlayerIdPair? idPair = _playerIdPairs.FirstOrDefault();
                 await _rlbotServer.WriteAsync(
-                    new SessionReady(_closeAfterMatch, _clientId, idPair?.SpawnId ?? 0)
+                    new SessionReady(_closeBetweenMatches, _clientId, idPair?.SpawnId ?? 0)
                 );
 
                 _isReady = true;
@@ -239,12 +239,12 @@ internal class FlatBuffersSession
         return true;
     }
 
-    private async Task SendPayloadToClientAsync(TypedPayload payload)
+    private void SendPayloadToClient(TypedPayload payload)
     {
         try
         {
-            await _socketSpecWriter.WriteAsync(payload);
-            await _socketSpecWriter.SendAsync();
+            _socketSpecWriter.Write(payload);
+            _socketSpecWriter.Send();
         }
         catch (ObjectDisposedException)
         {
@@ -267,7 +267,7 @@ internal class FlatBuffersSession
                     _messageBuilder.Clear();
                     _messageBuilder.Finish(FieldInfo.Pack(_messageBuilder, m.Info).Value);
 
-                    await SendPayloadToClientAsync(
+                    SendPayloadToClient(
                         TypedPayload.FromFlatBufferBuilder(DataType.FieldInfo, _messageBuilder)
                     );
                     break;
@@ -277,7 +277,7 @@ internal class FlatBuffersSession
                         MatchSettings.Pack(_messageBuilder, m.Settings).Value
                     );
 
-                    await SendPayloadToClientAsync(
+                    SendPayloadToClient(
                         TypedPayload.FromFlatBufferBuilder(
                             DataType.MatchSettings,
                             _messageBuilder
@@ -308,7 +308,7 @@ internal class FlatBuffersSession
                         ControllableTeamInfo.Pack(_messageBuilder, playerMappings).Value
                     );
 
-                    await SendPayloadToClientAsync(
+                    SendPayloadToClient(
                         TypedPayload.FromFlatBufferBuilder(
                             DataType.ControllableTeamInfo,
                             _messageBuilder
@@ -323,7 +323,7 @@ internal class FlatBuffersSession
                         BallPrediction.Pack(_messageBuilder, m.BallPrediction).Value
                     );
 
-                    await SendPayloadToClientAsync(
+                    SendPayloadToClient(
                         TypedPayload.FromFlatBufferBuilder(
                             DataType.BallPrediction,
                             _messageBuilder
@@ -336,7 +336,7 @@ internal class FlatBuffersSession
                         GamePacket.Pack(_messageBuilder, m.GameState).Value
                     );
 
-                    await SendPayloadToClientAsync(
+                    SendPayloadToClient(
                         TypedPayload.FromFlatBufferBuilder(
                             DataType.GamePacket,
                             _messageBuilder
@@ -360,7 +360,7 @@ internal class FlatBuffersSession
                     _messageBuilder.Clear();
                     _messageBuilder.Finish(MatchComm.Pack(_messageBuilder, m.Message).Value);
 
-                    await SendPayloadToClientAsync(
+                    SendPayloadToClient(
                         TypedPayload.FromFlatBufferBuilder(
                             DataType.MatchComms,
                             _messageBuilder
@@ -369,7 +369,7 @@ internal class FlatBuffersSession
 
                     break;
                 case SessionMessage.StopMatch m
-                    when m.Force || (_connectionEstablished && _closeAfterMatch):
+                    when m.Force || (_connectionEstablished && _closeBetweenMatches):
                     _sessionForceClosed = m.Force;
                     return;
             }
@@ -434,7 +434,7 @@ internal class FlatBuffersSession
         {
             TypedPayload msg =
                 new() { Type = DataType.None, Payload = new ArraySegment<byte>([1]), };
-            SendPayloadToClientAsync(msg).Wait();
+            SendPayloadToClient(msg);
         }
         catch (Exception) { }
         finally

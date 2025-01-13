@@ -17,7 +17,7 @@ internal static class GameStateToFlat
         {
             X = vec.X,
             Y = vec.Y,
-            Z = vec.Z
+            Z = vec.Z,
         };
 
     private static RotatorT ToRotatorT(this Bridge.Models.Phys.Rotator vec) =>
@@ -25,7 +25,7 @@ internal static class GameStateToFlat
         {
             Pitch = vec.Pitch,
             Yaw = vec.Yaw,
-            Roll = vec.Roll
+            Roll = vec.Roll,
         };
 
     internal static ushort? GetBallActorIdFromIndex(this GameState gameState, uint index)
@@ -52,7 +52,7 @@ internal static class GameStateToFlat
                     Location = ball.Physics.Location.ToVector3T(),
                     Rotation = ball.Physics.Rotation.ToRotatorT(),
                     Velocity = ball.Physics.Velocity.ToVector3T(),
-                    AngularVelocity = ball.Physics.AngularVelocity.ToVector3T()
+                    AngularVelocity = ball.Physics.AngularVelocity.ToVector3T(),
                 };
 
             CollisionShapeUnion collisionShape = ball.Shape switch
@@ -63,7 +63,7 @@ internal static class GameStateToFlat
                         {
                             Length = boxShape.Length,
                             Width = boxShape.Width,
-                            Height = boxShape.Height
+                            Height = boxShape.Height,
                         }
                     ),
                 ICollisionShape.Sphere sphereShape
@@ -75,13 +75,13 @@ internal static class GameStateToFlat
                         new()
                         {
                             Diameter = cylinderShape.Diameter,
-                            Height = cylinderShape.Height
+                            Height = cylinderShape.Height,
                         }
                     ),
                 _
                     => CollisionShapeUnion.FromSphereShape(
                         new SphereShapeT { Diameter = 91.25f * 2 }
-                    )
+                    ),
             };
 
             balls.Add(new() { Physics = ballPhysics, Shape = collisionShape });
@@ -97,7 +97,7 @@ internal static class GameStateToFlat
             GameStatus.Replay => rlbot.flat.GameStatus.Replay,
             GameStatus.Paused => rlbot.flat.GameStatus.Paused,
             GameStatus.Ended => rlbot.flat.GameStatus.Ended,
-            _ => rlbot.flat.GameStatus.Inactive
+            _ => rlbot.flat.GameStatus.Inactive,
         };
 
         GameInfoT gameInfo =
@@ -110,20 +110,20 @@ internal static class GameStateToFlat
                 GameStatus = gameStatus,
                 WorldGravityZ = gameState.WorldGravityZ,
                 GameSpeed = gameState.GameSpeed,
-                FrameNum = gameState.FrameNum
+                FrameNum = gameState.FrameNum,
             };
 
         List<TeamInfoT> teams =
         [
             new() { TeamIndex = 0, Score = gameState.TeamScores.blue },
-            new() { TeamIndex = 1, Score = gameState.TeamScores.orange }
+            new() { TeamIndex = 1, Score = gameState.TeamScores.orange },
         ];
 
         List<BoostPadStateT> boostStates = gameState
             .BoostPads.Values.OrderBy(boost => boost.SpawnPosition.Y)
             .ThenBy(boost => boost.SpawnPosition.X)
             .Select(
-                boost => new BoostPadStateT { IsActive = boost.IsActive, Timer = boost.Timer }
+                boost => new BoostPadStateT { IsActive = boost.IsActive, Timer = boost.Timer, }
             )
             .ToList();
 
@@ -137,7 +137,7 @@ internal static class GameStateToFlat
                 CarState.DoubleJumping => AirState.DoubleJumping,
                 CarState.Dodging => AirState.Dodging,
                 CarState.InAir => AirState.InAir,
-                _ => AirState.OnGround
+                _ => AirState.OnGround,
             };
 
             TouchT? lastTouch = null;
@@ -158,7 +158,7 @@ internal static class GameStateToFlat
                         Location = car.Physics.Location.ToVector3T(),
                         Rotation = car.Physics.Rotation.ToRotatorT(),
                         Velocity = car.Physics.Velocity.ToVector3T(),
-                        AngularVelocity = car.Physics.AngularVelocity.ToVector3T()
+                        AngularVelocity = car.Physics.AngularVelocity.ToVector3T(),
                     },
                     LatestTouch = lastTouch,
                     AirState = airState,
@@ -178,13 +178,13 @@ internal static class GameStateToFlat
                         Assists = car.ScoreInfo.Assists,
                         Saves = car.ScoreInfo.Saves,
                         Shots = car.ScoreInfo.Shots,
-                        Demolitions = car.ScoreInfo.Demolitions
+                        Demolitions = car.ScoreInfo.Demolitions,
                     },
                     Hitbox = new()
                     {
                         Length = car.Hitbox.Length,
                         Width = car.Hitbox.Width,
-                        Height = car.Hitbox.Height
+                        Height = car.Hitbox.Height,
                     },
                     HitboxOffset = car.HitboxOffset.ToVector3T(),
                     Accolades = car.Accolades,
@@ -197,7 +197,7 @@ internal static class GameStateToFlat
                         Roll = car.LastInput.Roll,
                         Jump = car.LastInput.Jump,
                         Boost = car.LastInput.Boost,
-                        Handbrake = car.LastInput.Handbrake
+                        Handbrake = car.LastInput.Handbrake,
                     },
                     LastSpectated = car.LastSpectated,
                     HasJumped = car.HasJumped,
@@ -215,7 +215,7 @@ internal static class GameStateToFlat
             GameInfo = gameInfo,
             Teams = teams,
             BoostPads = boostStates,
-            Players = players
+            Players = players,
         };
     }
 }

@@ -29,7 +29,7 @@ internal record Input(PlayerInputT PlayerInput) : IBridgeMessage
                 new()
                 {
                     ActorId = actorIdValue,
-                    CarInput = FlatToModel.ToCarInput(PlayerInput.ControllerState)
+                    CarInput = FlatToModel.ToCarInput(PlayerInput.ControllerState),
                 };
             context.PlayerInputSender.SendPlayerInput(playerInput);
         }
@@ -64,7 +64,7 @@ internal record SpawnHuman(PlayerConfigurationT Config, uint DesiredIndex) : IBr
                 SpawnId = Config.SpawnId,
                 DesiredPlayerIndex = DesiredIndex,
                 IsBot = false,
-                IsCustomBot = false
+                IsCustomBot = false,
             }
         );
     }
@@ -106,7 +106,7 @@ internal record SpawnBot(
                 SpawnId = Config.SpawnId,
                 DesiredPlayerIndex = DesiredIndex,
                 IsCustomBot = IsCustomBot,
-                IsBot = true
+                IsBot = true,
             }
         );
     }
@@ -213,7 +213,7 @@ internal record SetMutators(MutatorSettingsT MutatorSettings) : IBridgeMessage
                     nameof(MutatorSettings.MatchLength),
                     MutatorSettings.MatchLength,
                     null
-                )
+                ),
         };
 
         context.GameState.MatchLength = MutatorSettings.MatchLength switch
@@ -227,7 +227,7 @@ internal record SetMutators(MutatorSettingsT MutatorSettings) : IBridgeMessage
                     nameof(MutatorSettings.MatchLength),
                     MutatorSettings.MatchLength,
                     null
-                )
+                ),
         };
 
         context.GameState.RespawnTime = MutatorSettings.RespawnTimeOption switch
@@ -241,7 +241,7 @@ internal record SetMutators(MutatorSettingsT MutatorSettings) : IBridgeMessage
                     nameof(MutatorSettings.RespawnTimeOption),
                     MutatorSettings.RespawnTimeOption,
                     null
-                )
+                ),
         };
     }
 }

@@ -17,7 +17,7 @@ public class QuickChat
             A = 255,
             R = 255,
             G = 200,
-            B = 80
+            B = 80,
         };
     private static readonly ColorT BlueColor =
         new()
@@ -25,7 +25,7 @@ public class QuickChat
             A = 255,
             R = 120,
             G = 200,
-            B = 255
+            B = 255,
         };
     private static readonly ColorT BackgroundColor =
         new()
@@ -33,7 +33,7 @@ public class QuickChat
             A = 150,
             R = 0,
             G = 0,
-            B = 0
+            B = 0,
         };
 
     private readonly LinkedList<(float, MatchCommT)> _chats = new();
@@ -92,7 +92,7 @@ public class QuickChat
                 };
 
             renderMessages.Add(
-                new RenderMessageT() { Variety = RenderTypeUnion.FromString2D(message), }
+                new RenderMessageT() { Variety = RenderTypeUnion.FromString2D(message) }
             );
 
             yVal += Rendering.FontHeightPixels;
